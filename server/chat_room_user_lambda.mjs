@@ -6,11 +6,13 @@ const documentClient = DynamoDBDocumentClient.from(client);
 
 export const handler = async (event) => {
     try {
+        const parsedBody = JSON.parse(event.body);
+
         const { Items } = await documentClient.send(new QueryCommand({
             TableName: 'chat_room_users',
             KeyConditionExpression: 'email = :email',
             ExpressionAttributeValues: {
-                ':email': event.email   ,
+                ':email': parsedBody.email,
             },
         }));
 
@@ -18,7 +20,7 @@ export const handler = async (event) => {
             await documentClient.send(new PutCommand({
                 TableName: 'chat_room_users',
                 Item: {
-                    email: event.email,
+                    email: parsedBody.email,
                 },
             }));
         }
@@ -27,7 +29,7 @@ export const handler = async (event) => {
           statusCode: 200,
           body: JSON.stringify({
             message: 'Success',
-            data: event.email
+            data: parsedBody.email
           }),
         };
     } catch (error) {
