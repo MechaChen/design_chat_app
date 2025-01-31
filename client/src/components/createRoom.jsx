@@ -31,6 +31,7 @@ const CreateRoom = ({ userEmail }) => {
             const message = JSON.stringify({
                 action: "create_room",
                 participants: [userEmail, selectedUser],
+                created_at: new Date().toISOString(),
             });
 
             socket.send(message);
@@ -43,10 +44,31 @@ const CreateRoom = ({ userEmail }) => {
         const socket = new WebSocket('wss://b8zmy3ss44.execute-api.us-east-1.amazonaws.com/production/');
         setSocket(socket);
 
-        // return () => {
-        //     socket.close();
-        // };
-    }, []);
+        const connectionPayload = {
+            action: "create_connection",
+            user_id: userEmail,
+        }
+
+        const userRoomsPayload = {
+            action: "get_user_rooms",
+            user_email: userEmail,
+        }
+
+        socket.onopen = () => {
+            console.log('socket opened');
+            socket.send(JSON.stringify(connectionPayload));
+            socket.send(JSON.stringify(userRoomsPayload));
+        };
+
+        socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            console.log('data ======>', data);
+        };
+
+        return () => {
+            socket.close();
+        };
+    }, [userEmail]);
 
 
     return (

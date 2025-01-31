@@ -9,22 +9,22 @@ export const handler = async (event) => {
 
 
     try {
-        const connectionItem = JSON.parse(event.body);
-        delete connectionItem.action;
+        const connectionPayload = JSON.parse(event.body);
+        delete connectionPayload.action;
 
         await documentClient.send(new PutCommand({
             TableName: 'chat_app_connections',
             Item: {
-                connectionId,
-                ...connectionItem,
+                ...connectionPayload,
+                connection_id: connectionId,
+                created_at: new Date().toISOString(),
             },
         }));
 
         return {
           statusCode: 200,
           body: JSON.stringify({
-            message: 'Success',
-            data: parsedBody.email
+            connection_id: connectionId,
           }),
         };
     } catch (error) {
