@@ -1,10 +1,10 @@
 
 import CreateRoom from './createRoom';
 
-export default function ChatApp() {
+export default function ChatApp({ userEmail }) {
     return (
         <div>
-            <CreateRoom />
+            <CreateRoom userEmail={userEmail} />
         </div>
     );
 }

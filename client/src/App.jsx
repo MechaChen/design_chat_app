@@ -6,7 +6,7 @@ import ChatApp from './components/chatApp';
 
 import './App.css'
 
-function LoginForm({ setIsLogin }) {
+function LoginForm({ setUserEmail }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -14,10 +14,10 @@ function LoginForm({ setIsLogin }) {
     setIsLoading(true);
 
     try {
-      await createUser(values.email);
+      const { data } = await createUser(values.email);
 
       setError(null);
-      setIsLogin(true);
+      setUserEmail(data);
     } catch (error) {
       setError(error);
       console.log(error);
@@ -70,7 +70,7 @@ function LoginForm({ setIsLogin }) {
 }
 
 function App() {
-  const [isLogin, setIsLogin] = useState(false);
+  const [userEmail, setUserEmail] = useState(null);
 
   return (
     <div>
@@ -78,7 +78,7 @@ function App() {
 
       <br />
 
-      {isLogin ? <ChatApp /> : <LoginForm setIsLogin={setIsLogin} />}
+      {userEmail ? <ChatApp userEmail={userEmail} /> : <LoginForm setUserEmail={setUserEmail} />}
     </div>
   )
 }
