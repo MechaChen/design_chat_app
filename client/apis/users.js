@@ -6,3 +6,8 @@ export const createUser = async (email) => {
     const response = await axios.post(`${apiPrefix}/chat-room-user`, { email });
     return response.data;
 };
+
+export const getUsers = async () => {
+    const response = await axios.get(`${apiPrefix}/chat-room-user`);
+    return response.data;
+};

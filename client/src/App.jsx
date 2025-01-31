@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Button, Form, Input, Alert, Typography } from 'antd';
 
 import { createUser } from '../apis/users';
+import ChatApp from './components/chatApp';
 
 import './App.css'
 
@@ -77,7 +78,7 @@ function App() {
 
       <br />
 
-      {isLogin ? <div>Hello</div> : <LoginForm setIsLogin={setIsLogin} />}
+      {isLogin ? <ChatApp /> : <LoginForm setIsLogin={setIsLogin} />}
     </div>
   )
 }
