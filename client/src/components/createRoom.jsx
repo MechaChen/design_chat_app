@@ -1,11 +1,16 @@
-import { Button, Select, Space } from 'antd';
-import { getUsers } from '../../apis/users';
+import { Button, Select, Space, message } from 'antd';
 import { useEffect, useState } from 'react';
 
+import { getUsers } from '../../apis/users';
+import { connectChatRoomSocket } from '../../apis/websocket';
+
 const CreateRoom = ({ userEmail }) => {
+    const [messageApi, contextHolder] = message.useMessage();
+
     // REST API
     const [users, setUsers] = useState([]);
     const [selectedUser, setSelectedUser] = useState(null);
+
 
     useEffect(() => {
         getUsers().then(setUsers);
@@ -41,7 +46,7 @@ const CreateRoom = ({ userEmail }) => {
 
 
     useEffect(() => {
-        const socket = new WebSocket('wss://b8zmy3ss44.execute-api.us-east-1.amazonaws.com/production/');
+        const socket = connectChatRoomSocket();
         setSocket(socket);
 
         const connectionPayload = {
@@ -56,8 +61,14 @@ const CreateRoom = ({ userEmail }) => {
 
         socket.onopen = () => {
             console.log('socket opened');
-            socket.send(JSON.stringify(connectionPayload));
-            socket.send(JSON.stringify(userRoomsPayload));
+            try {
+                socket.send(JSON.stringify(connectionPayload));
+                socket.send(JSON.stringify(userRoomsPayload));
+                messageApi.success('Connected to the chat room successfully');
+            } catch (error) {
+                console.error('Failed to connect to the server', error);
+                messageApi.error('Failed to connect to the server');
+            }
         };
 
         socket.onmessage = (event) => {
@@ -65,25 +76,47 @@ const CreateRoom = ({ userEmail }) => {
             console.log('data ======>', data);
         };
 
+        const handleBeforeUnload = () => {
+            if (socket.readyState === WebSocket.OPEN) {
+                const deleteConnectionPayload = {
+                    action: "delete_connection",
+                    user_id: userEmail,
+                };
+                socket.send(JSON.stringify(deleteConnectionPayload));
+                console.log('Disconnected from the chat room...');
+            }
+        };
+
+        window.addEventListener("beforeunload", handleBeforeUnload);
+
         return () => {
+            window.removeEventListener("beforeunload", handleBeforeUnload);
             socket.close();
         };
-    }, [userEmail]);
+    }, [messageApi, userEmail]);
 
 
     return (
-        <Space size={16}>
-            <Select
-                style={{ width: 200 }}
-                value={selectedUser}
-                onChange={handleChange}
-                options={userOptions}
-                placeholder="Select a user"
-            />
-            <Button type="primary" htmlType="submit" onClick={createRoom} disabled={!selectedUser}>
-                Create Room
-            </Button>
-        </Space>
+        <>
+            {contextHolder}
+            <Space size={16}>
+                <Select
+                    style={{ width: 200 }}
+                    value={selectedUser}
+                    onChange={handleChange}
+                    options={userOptions}
+                    placeholder="Select a user"
+                />
+                <Button
+                    type="primary"
+                    htmlType="submit"
+                    onClick={createRoom}
+                    disabled={!selectedUser}
+                >
+                    Create Room
+                </Button>
+            </Space>
+        </>
     );
 };
 
