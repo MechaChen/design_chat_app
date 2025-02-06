@@ -1,11 +1,9 @@
-import { Button, Select, Space, message } from 'antd';
+import { Button, Select, Space } from 'antd';
 import { useEffect, useState } from 'react';
 
 import { getUsers } from '../../apis/users';
-import { connectChatRoomSocket } from '../../apis/websocket';
 
 const CreateRoom = ({ userEmail, socket }) => {
-    const [messageApi, contextHolder] = message.useMessage();
 
     // REST API
     const [users, setUsers] = useState([]);
@@ -29,14 +27,8 @@ const CreateRoom = ({ userEmail, socket }) => {
 
 
     // WebSocket
-    const [userRooms, setUserRooms] = useState([]);
-
     const createRoom = () => {
         if (socket && selectedUser) {
-            const userRoomsPayload = {
-                action: "get_user_rooms",
-                user_id: userEmail,
-            }
 
             const message = JSON.stringify({
                 action: "create_room",
@@ -45,71 +37,12 @@ const CreateRoom = ({ userEmail, socket }) => {
             });
 
             socket.send(message);
-            socket.send(JSON.stringify(userRoomsPayload));
             setSelectedUser(null);
         }
     }
 
-
-    // useEffect(() => {
-    //     const socket = connectChatRoomSocket();
-    //     setSocket(socket);
-
-    //     const connectionPayload = {
-    //         action: "create_connection",
-    //         user_id: userEmail,
-    //     }
-
-    //     const userRoomsPayload = {
-    //         action: "get_user_rooms",
-    //         user_id: userEmail,
-    //     }
-
-
-    //     socket.onopen = () => {
-    //         console.log('socket opened');
-    //         try {
-    //             socket.send(JSON.stringify(connectionPayload));
-    //             socket.send(JSON.stringify(userRoomsPayload));
-    //             messageApi.success('Connected to the chat room successfully');
-    //         } catch (error) {
-    //             console.error('Failed to connect to the server', error);
-    //             messageApi.error('Failed to connect to the server');
-    //         }
-    //     };
-
-    //     socket.onmessage = (event) => {
-    //         const data = JSON.parse(event.data);
-    //         console.log('data ======>', data);
-
-    //         if (data.action === "get_user_rooms") {
-    //             setUserRooms(data.data);
-    //         }
-    //     };
-
-    //     const handleBeforeUnload = () => {
-    //         if (socket.readyState === WebSocket.OPEN) {
-    //             const deleteConnectionPayload = {
-    //                 action: "delete_connection",
-    //                 user_id: userEmail,
-    //             };
-    //             socket.send(JSON.stringify(deleteConnectionPayload));
-    //             console.log('Disconnected from the chat room...');
-    //         }
-    //     };
-
-    //     window.addEventListener("beforeunload", handleBeforeUnload);
-
-    //     return () => {
-    //         window.removeEventListener("beforeunload", handleBeforeUnload);
-    //         socket.close();
-    //     };
-    // }, [messageApi, userEmail]);
-
-
     return (
         <>
-            {/* {contextHolder} */}
             <Space size={16}>
                 <Select
                     style={{ width: 200 }}

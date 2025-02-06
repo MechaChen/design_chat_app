@@ -79,7 +79,7 @@ function App() {
       <br />
 
       {userEmail
-        ? <ChatApp userEmail={userEmail} />
+        ? <ChatApp userEmail={userEmail} setUserEmail={setUserEmail} />
         : <LoginForm setUserEmail={setUserEmail} />
       }
     </div>

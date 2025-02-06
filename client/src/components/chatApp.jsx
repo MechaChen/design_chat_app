@@ -4,9 +4,10 @@ import { useState, useEffect } from 'react';
 import { connectChatRoomSocket } from '../../apis/websocket';
 import CreateRoom from './createRoom';
 import UserRooms from './userRooms';
+import { Button, Flex } from 'antd';
 
 
-export default function ChatApp({ userEmail }) {
+export default function ChatApp({ userEmail, setUserEmail }) {
 
     const [socket, setSocket] = useState(null);
 
@@ -29,33 +30,43 @@ export default function ChatApp({ userEmail }) {
         };
 
         socket.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            console.log('data ======>', data);
+            const parsedEvent = JSON.parse(event);
+            console.log('parsedEvent ======>', parsedEvent);
+
+            // if websocket disconnects by Apigateway automatically, go back to login page
+            if (parsedEvent.action === "$disconnect") {
+                setUserEmail(null);
+            }
         };
 
-        const handleBeforeUnload = () => {
+        const deleteConnection = () => {
             if (socket.readyState === WebSocket.OPEN) {
                 const deleteConnectionPayload = {
                     action: "delete_connection",
                     user_id: userEmail,
                 };
                 socket.send(JSON.stringify(deleteConnectionPayload));
-                console.log('Disconnected from the chat room...');
+                console.log('Disconnected from the chat room......');
             }
         };
 
-        window.addEventListener("beforeunload", handleBeforeUnload);
+        window.addEventListener("beforeunload", deleteConnection);
 
         return () => {
-            window.removeEventListener("beforeunload", handleBeforeUnload);
+            deleteConnection();
+            window.removeEventListener("beforeunload", deleteConnection);
             socket.close();
         };
-    }, [userEmail]);
+    }, [userEmail, setUserEmail]);
 
     return (
         <div>
+            <Flex justify="flex-start" align="center">
+                <h2 style={{ marginRight: '10px' }}>User: {userEmail}</h2>
+                <Button onClick={() => setUserEmail(null)}>Logout</Button>
+            </Flex>
             <CreateRoom userEmail={userEmail} socket={socket} />
-            <UserRooms socket={socket} />
+            <UserRooms userEmail={userEmail} socket={socket} />
         </div>
     );
 }

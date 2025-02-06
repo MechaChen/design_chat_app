@@ -1,5 +1,5 @@
 import { Avatar } from 'antd';
-import { Button, List } from 'antd';
+import { List } from 'antd';
 import { useState, useEffect } from 'react';
 
 export default function UserRooms({ socket, userEmail }) {
@@ -13,6 +13,14 @@ export default function UserRooms({ socket, userEmail }) {
         socket.onmessage = (event) => {
             const data = JSON.parse(event.data);
             console.log('userRooms data ======>', data);
+
+            if (data.action === "create_room") {
+                const userRoomsPayload = {
+                    action: "get_user_rooms",
+                    user_id: userEmail,
+                }
+                socket.send(JSON.stringify(userRoomsPayload));
+            }
 
             if (data.action === "get_user_rooms") {
                 setUserRooms(data.data);
