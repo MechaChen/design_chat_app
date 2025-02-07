@@ -2,10 +2,9 @@ import { Avatar } from 'antd';
 import { List } from 'antd';
 import { useState, useEffect } from 'react';
 
-export default function UserRooms({ socket, userEmail }) {
+export default function UserRooms({ socket, userEmail, selectedRoom, setSelectedRoom }) {
 
     const [userRooms, setUserRooms] = useState([]);
-    const [selectedRoom, setSelectedRoom] = useState(null);
 
     useEffect(() => {
         if (!socket) return;
@@ -30,20 +29,20 @@ export default function UserRooms({ socket, userEmail }) {
 
     return (
         <List
-            style={{ marginTop: '50px', width: '40%' }}
+            style={{ width: '40%' }}
             bordered
             dataSource={userRooms}
             renderItem={(userRoom) => (
                 <List.Item
                     style={{
                         justifyContent: 'flex-start',
-                        backgroundColor: selectedRoom?.room_id === userRoom?.room_id ? '#F7EBE1D9' : 'transparent',
+                        backgroundColor: selectedRoom?.room_id === userRoom?.room_id ? '#e6f4ff' : 'transparent',
                         cursor: 'pointer'
                     }}
                     onClick={() => setSelectedRoom(userRoom)}
                 >
                     <Avatar
-                        style={{ backgroundColor: '#fde3cf', color: '#f56a00', marginRight: '16px' }}
+                        style={{ backgroundColor: '#91caff', color: '#000', marginRight: '16px' }}
                     >
                         {userRoom.other_participants.join(',').charAt(0)}
                     </Avatar>

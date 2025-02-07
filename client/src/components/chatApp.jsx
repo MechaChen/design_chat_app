@@ -1,15 +1,17 @@
 
 import { useState, useEffect } from 'react';
+import { Button, Flex } from 'antd';
 
 import { connectChatRoomSocket } from '../../apis/websocket';
 import CreateRoom from './createRoom';
 import UserRooms from './userRooms';
-import { Button, Flex } from 'antd';
+import ChatRoom from './chatRoom';
 
 
 export default function ChatApp({ userEmail, setUserEmail }) {
 
     const [socket, setSocket] = useState(null);
+    const [selectedRoom, setSelectedRoom] = useState(null);
 
     useEffect(() => {
         const socket = connectChatRoomSocket();
@@ -66,7 +68,10 @@ export default function ChatApp({ userEmail, setUserEmail }) {
                 <Button onClick={() => setUserEmail(null)}>Logout</Button>
             </Flex>
             <CreateRoom userEmail={userEmail} socket={socket} />
-            <UserRooms userEmail={userEmail} socket={socket} />
+            <Flex justify="space-between" align="flex-start" style={{ marginTop: '50px' }}>
+                <UserRooms userEmail={userEmail} socket={socket} selectedRoom={selectedRoom} setSelectedRoom={setSelectedRoom} />
+                <ChatRoom roomId={selectedRoom?.room_id} selectedRoom={selectedRoom} setSelectedRoom={setSelectedRoom} />
+            </Flex>
         </div>
     );
 }
