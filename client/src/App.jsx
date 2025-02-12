@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button, Form, Input, Alert, Typography } from 'antd';
 
-import { createUser } from '../apis/users';
+import { createUser } from './apis/users';
 import ChatApp from './components/chatApp';
 
 import './App.css'

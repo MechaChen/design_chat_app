@@ -1,7 +1,7 @@
 import { Button, Select, Space } from 'antd';
 import { useEffect, useState } from 'react';
 
-import { getUsers } from '../../apis/users';
+import { getUsers } from '../apis/users';
 
 const CreateRoom = ({ userEmail, socket }) => {
 

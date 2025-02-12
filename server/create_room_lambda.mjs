@@ -6,7 +6,7 @@ import { v4 as uuidv4 } from 'uuid';
 const client = new DynamoDBClient({});
 const documentClient = DynamoDBDocumentClient.from(client);
 
-const WEBSOCKET_ENDPOINT = 'wss://b8zmy3ss44.execute-api.us-east-1.amazonaws.com/production/';
+const WEBSOCKET_ENDPOINT = 'https://b8zmy3ss44.execute-api.us-east-1.amazonaws.com/production/';
 const apiGateway = new ApiGatewayManagementApiClient({ endpoint: WEBSOCKET_ENDPOINT });
 
 export const handler = async (event) => {
@@ -30,9 +30,6 @@ export const handler = async (event) => {
         }));
 
         const [creator, ...otherParticipants] = roomPayload.participants;
-
-        const WEBSOCKET_ENDPOINT = 'https://b8zmy3ss44.execute-api.us-east-1.amazonaws.com/production/';
-        const apiGateway = new ApiGatewayManagementApiClient({ endpoint: WEBSOCKET_ENDPOINT });
 
         // get all connection_ids for participants
         const otherParticipantsConnectionData = await Promise.all(

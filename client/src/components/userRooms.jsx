@@ -9,9 +9,9 @@ export default function UserRooms({ socket, userEmail, selectedRoom, setSelected
     useEffect(() => {
         if (!socket) return;
 
-        socket.onmessage = (event) => {
+        socket.addEventListener("message", (event) => {
             const data = JSON.parse(event.data);
-            console.log('userRooms data ======>', data);
+            // console.log('userRooms data ======>', data);
 
             if (data.action === "create_room") {
                 const userRoomsPayload = {
@@ -24,7 +24,7 @@ export default function UserRooms({ socket, userEmail, selectedRoom, setSelected
             if (data.action === "get_user_rooms") {
                 setUserRooms(data.data);
             }
-        };
+        });
     }, [socket, userEmail]);
 
     return (
