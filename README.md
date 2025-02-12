@@ -12,8 +12,11 @@
 
 Results:
 
+https://github.com/user-attachments/assets/8316b8db-1616-4842-b5e2-182e083446c1
 
-- [ ] Create user account and Login
+&nbsp;
+
+- [x] Create user account and Login
     - [x] Build email input
     - [x] Create user by email on server
     - [x] Login by email on server
