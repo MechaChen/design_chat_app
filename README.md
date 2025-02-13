@@ -52,6 +52,10 @@ https://github.com/user-attachments/assets/8316b8db-1616-4842-b5e2-182e083446c1
 
 #### Many to many connection
 
+- [x] Update creating a room by selecting single user to many users
+- [x] Update room list UI able to show multiple users
+- [x] Test multiple users can send message to others in real time
+
 
 #### Show user online/offline status
 

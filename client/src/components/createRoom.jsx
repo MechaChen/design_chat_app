@@ -7,7 +7,7 @@ const CreateRoom = ({ userEmail, socket }) => {
 
     // REST API
     const [users, setUsers] = useState([]);
-    const [selectedUser, setSelectedUser] = useState(null);
+    const [selectedUser, setSelectedUser] = useState([]);
 
 
     useEffect(() => {
@@ -28,11 +28,11 @@ const CreateRoom = ({ userEmail, socket }) => {
 
     // WebSocket
     const createRoom = () => {
-        if (socket && selectedUser) {
+        if (socket && selectedUser.length > 0) {
 
             const message = JSON.stringify({
                 action: "create_room",
-                participants: [userEmail, selectedUser],
+                participants: [userEmail, ...selectedUser],
                 created_at: new Date().toISOString(),
             });
 
@@ -45,6 +45,7 @@ const CreateRoom = ({ userEmail, socket }) => {
         <>
             <Space size={16}>
                 <Select
+                    mode="multiple"
                     style={{ width: 200 }}
                     value={selectedUser}
                     onChange={handleChange}

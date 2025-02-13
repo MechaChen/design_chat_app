@@ -1,4 +1,4 @@
-import { Avatar } from 'antd';
+import { Avatar, Flex } from 'antd';
 import { List } from 'antd';
 import { useState, useEffect } from 'react';
 
@@ -35,18 +35,23 @@ export default function UserRooms({ socket, userEmail, selectedRoom, setSelected
             renderItem={(userRoom) => (
                 <List.Item
                     style={{
-                        justifyContent: 'flex-start',
+                        flexDirection: 'column',
+                        alignItems: 'flex-start',
                         backgroundColor: selectedRoom?.room_id === userRoom?.room_id ? '#e6f4ff' : 'transparent',
                         cursor: 'pointer'
                     }}
                     onClick={() => setSelectedRoom(userRoom)}
                 >
-                    <Avatar
-                        style={{ backgroundColor: '#91caff', color: '#000', marginRight: '16px' }}
-                    >
-                        {userRoom.other_participants.join(',').charAt(0)}
-                    </Avatar>
-                    {userRoom.other_participants.join(',')}
+                    {userRoom.other_participants.map((participant, index) => (
+                        <Flex key={participant} align="center" style={{ paddingTop: index === 0 ? '0px' : '8px', cursor: 'pointer' }}>
+                            <Avatar
+                                style={{ backgroundColor: '#91caff', color: '#000', marginRight: '8px' }}
+                            >
+                                {participant.charAt(0)}
+                            </Avatar>
+                            {participant}
+                        </Flex>
+                    ))}
                 </List.Item>
             )}
         />
