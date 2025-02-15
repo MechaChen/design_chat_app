@@ -1,31 +1,58 @@
 import { Avatar, Flex } from 'antd';
 import { List } from 'antd';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+
+import { sharedWorker } from './chatApp';
+import { get_user_rooms } from '../config/socketActions';
 
 export default function UserRooms({ socket, userEmail, selectedRoom, setSelectedRoom }) {
 
     const [userRooms, setUserRooms] = useState([]);
+    const isUserRoomsInit = useRef(false);
 
     useEffect(() => {
-        if (!socket) return;
+        if (isUserRoomsInit.current) return;
 
-        socket.addEventListener("message", (event) => {
-            const data = JSON.parse(event.data);
-            // console.log('userRooms data ======>', data);
+        const userRoomsPayload = {
+            action: get_user_rooms,
+            user_id: userEmail,
+        }
 
-            if (data.action === "create_room") {
-                const userRoomsPayload = {
-                    action: "get_user_rooms",
-                    user_id: userEmail,
-                }
-                socket.send(JSON.stringify(userRoomsPayload));
-            }
-
-            if (data.action === "get_user_rooms") {
-                setUserRooms(data.data);
-            }
+        sharedWorker.port.postMessage({
+            type: 'not init socket',
+            socketPayload: userRoomsPayload
         });
-    }, [socket, userEmail]);
+
+        
+
+        sharedWorker.port.addEventListener('message', (event) => {
+            console.log('UserRooms received socket action from Shared worker', event);
+
+            if (event.data.action === get_user_rooms) {
+                setUserRooms(event.data.data);
+            }
+        })
+
+        sharedWorker.port.start();
+
+        isUserRoomsInit.current = true;
+        // socket.addEventListener("message", (event) => {
+        //     const data = JSON.parse(event.data);
+        //     // console.log('userRooms data ======>', data);
+
+        //     if (data.action === "create_room") {
+        //         const userRoomsPayload = {
+        //             action: "get_user_rooms",
+        //             user_id: userEmail,
+        //         }
+        //         socket.send(JSON.stringify(userRoomsPayload));
+        //     }
+
+        //     if (data.action === "get_user_rooms") {
+        //         setUserRooms(data.data);
+        //     }
+        // });
+    }, [userEmail]);
 
     return (
         <List

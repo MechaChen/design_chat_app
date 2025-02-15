@@ -57,10 +57,17 @@ https://github.com/user-attachments/assets/8316b8db-1616-4842-b5e2-182e083446c1
 - [x] Test multiple users can send message to others in real time
 
 
+#### Share connection for all the tabs and windows
+
+- [ ] Setup Shared worker for Web socket connection
+- [ ] Test multiple tabs and windows can accept 'create_room' action from Shared worker
+- [ ] Test multiple tabs and windows can accept 'create_message' action from Shared worker
+- [ ] Test if multiple tabs & windows only share one connection
+- [ ] Test if original version is required multiple tabs & windows connection
+
+
+
 #### Show user online/offline status
-
-
-#### Share connection for all the tabs
 
 
 #### Store draft in indexDB
