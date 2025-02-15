@@ -12,14 +12,25 @@ export const handler = async (event) => {
 
         return {
           statusCode: 200,
-          body: JSON.stringify({
-            message: 'Success',
-            data: parsedBody.email
-          }),
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Methods': 'OPTIONS,GET,POST,PUT,DELETE',
+            'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
+            'Access-Control-Allow-Credentials': true,
+            'Access-Control-Allow-Origin': '*',
+          },
+          body: JSON.stringify(Items),
         };
     } catch (error) {
         return {
             statusCode: 500,
+            headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Methods': 'OPTIONS,GET,POST,PUT,DELETE',
+                'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
+                'Access-Control-Allow-Credentials': true,
+                'Access-Control-Allow-Origin': '*',
+            },
             body: JSON.stringify({
                 message: error.message,
             }),

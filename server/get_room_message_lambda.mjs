@@ -6,18 +6,23 @@ const documentClient = DynamoDBDocumentClient.from(client);
 
 export const handler = async (event) => {
     try {
-        const parsedBody = JSON.parse(event.body);
-
         const { Items } = await documentClient.send(new QueryCommand({
             TableName: 'chat_app_messages',
             KeyConditionExpression: 'room_id = :room_id',
             ExpressionAttributeValues: {
-                ':room_id': parsedBody.room_id,
+                ':room_id': event.pathParameters.room_id,
             },
         }));
 
         return {
             statusCode: 200,
+            headers: {
+                ...event.headers,
+                "Access-Control-Allow-Headers" : "Content-Type",
+                "Access-Control-Allow-Origin": "http://localhost:5173",
+                "Access-Control-Allow-Methods": "OPTIONS,POST,GET",
+                'Content-Type': 'application/json',
+            },
             body: JSON.stringify({ message: 'Success', data: Items }),
         };
     } catch (error) {

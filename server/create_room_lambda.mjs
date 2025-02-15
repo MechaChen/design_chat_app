@@ -6,9 +6,6 @@ import { v4 as uuidv4 } from 'uuid';
 const client = new DynamoDBClient({});
 const documentClient = DynamoDBDocumentClient.from(client);
 
-const WEBSOCKET_ENDPOINT = 'https://b8zmy3ss44.execute-api.us-east-1.amazonaws.com/production/';
-const apiGateway = new ApiGatewayManagementApiClient({ endpoint: WEBSOCKET_ENDPOINT });
-
 export const handler = async (event) => {
     const connectionId = event.requestContext.connectionId;
 
@@ -42,9 +39,16 @@ export const handler = async (event) => {
             })))
         );
 
+        console.log('otherParticipantsConnectionData =>', JSON.stringify(otherParticipantsConnectionData))
+
         const otherParticipantsConnectionIds = otherParticipantsConnectionData.map(
-            item => item.Items.map(item => item.connection_id)
+            item => item.Items[0].connection_id
         );
+
+        console.log('otherParticipantsConnectionIds =>', otherParticipantsConnectionIds)
+
+        const WEBSOCKET_ENDPOINT = 'https://b8zmy3ss44.execute-api.us-east-1.amazonaws.com/production/';
+        const apiGateway = new ApiGatewayManagementApiClient({ endpoint: WEBSOCKET_ENDPOINT });
 
         // send message to all participants
         await Promise.all(otherParticipantsConnectionIds.map(connectionId => 
@@ -79,6 +83,8 @@ export const handler = async (event) => {
           }),
         };
     } catch (error) {
+        console.log('Error:', error);
+
         return {
             statusCode: 500,
             body: JSON.stringify({

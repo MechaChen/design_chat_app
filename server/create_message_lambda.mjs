@@ -11,9 +11,7 @@ const apiGateway = new ApiGatewayManagementApiClient({ endpoint: WEBSOCKET_ENDPO
 
 export const handler = async (event) => {
     try {
-        console.log('event =>', event);
-
-        const messagePayload = event;
+        const messagePayload = JSON.parse(event.body);
         delete messagePayload.action;
 
         const uuid = uuidv4();
@@ -75,6 +73,7 @@ export const handler = async (event) => {
                 Data: JSON.stringify({
                     action: 'create_message',
                     message: messagePayload.message,
+                    message_id: uuid,
                     timestamp: timestamp,
                     sender: messagePayload.sender,
                 }),
@@ -87,8 +86,10 @@ export const handler = async (event) => {
           statusCode: 200,
           body: JSON.stringify({
             action: 'create_message',
-            message: 'Success',
+            message: messagePayload.message,
             message_id: uuid,
+            timestamp: timestamp,
+            sender: messagePayload.sender,
           }),
         };
     } catch (error) {
