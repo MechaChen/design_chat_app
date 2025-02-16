@@ -52,10 +52,18 @@ https://github.com/user-attachments/assets/8316b8db-1616-4842-b5e2-182e083446c1
 
 #### Many to many connection
 
+Results:
+
+https://github.com/user-attachments/assets/8f094ef2-0271-4ca3-827b-588591efc53c
+
+&nbsp;
+
 - [x] Update creating a room by selecting single user to many users
 - [x] Update room list UI able to show multiple users
 - [x] Test multiple users can send message to others in real time
 
+
+&nbsp;
 
 #### Share connection for all the tabs and windows
 
@@ -65,13 +73,15 @@ https://github.com/user-attachments/assets/8316b8db-1616-4842-b5e2-182e083446c1
 - [ ] Test if multiple tabs & windows only share one connection
 - [ ] Test if original version is required multiple tabs & windows connection
 
-
+&nbsp;
 
 #### Show user online/offline status
 
+&nbsp;
 
 #### Store draft in indexDB
 
+&nbsp;
 
 #### Show Typing indicator
 
