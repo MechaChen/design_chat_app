@@ -67,11 +67,14 @@ https://github.com/user-attachments/assets/8f094ef2-0271-4ca3-827b-588591efc53c
 
 #### Share connection for all the tabs and windows
 
-- [ ] Setup Shared worker for Web socket connection
-- [ ] Test multiple tabs and windows can accept 'create_room' action from Shared worker
-- [ ] Test multiple tabs and windows can accept 'create_message' action from Shared worker
-- [ ] Test if multiple tabs & windows only share one connection
-- [ ] Test if original version is required multiple tabs & windows connection
+- [x] Setup Shared worker for Web socket connection
+- [x] Test multiple tabs and windows can accept 'create_connection' action from Shared worker
+- [x] Test multiple tabs and windows can accept 'get_user_rooms' action from Shared worker
+- [ ] Test multiple tabs and window can disconnect websocket when all tabs & windows are closed
+- [x] Test multiple tabs and windows can accept 'create_room' action from Shared worker
+- [x] Test multiple tabs and windows can accept 'create_message' action from Shared worker
+- [x] Test if multiple tabs & windows only share one connection
+- [x] Test if original version is required multiple tabs & windows connection
 
 &nbsp;
 

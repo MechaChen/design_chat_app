@@ -1,41 +1,22 @@
 import { connectChatRoomSocket } from "../src/apis/websocket";
-import { create_connection, get_user_rooms, create_message, disconnect } from "../src/config/socketActions";
 
-let socket = null;
+const socket = connectChatRoomSocket();
 const connections = [];
 
+socket.onmessage = (event) => {
+    console.log('Socket ---> Shared worker', event, new Date().toISOString());
+    connections.forEach(port => {
+        port.postMessage(JSON.parse(event.data));
+    });
+}
 
-onconnect = (event) => {
+
+self.onconnect = (event) => {
     const port = event.ports[0];
     connections.push(port);
-
     
     port.onmessage = (event) => {
-
-        if (event.data.type === 'initSocket' && !socket) {
-            socket = connectChatRoomSocket();
-
-            socket.onopen = () => {
-                const { socketPayload } = event.data;
-
-                socket.send(JSON.stringify(socketPayload));
-                // socket.send(JSON.stringify(userRoomsPayload));
-            }
-
-
-            socket.onmessage = (event) => {
-                console.log('Socket ---> Shared worker', event, new Date().toISOString());
-                connections.forEach(port => {
-                    port.postMessage(JSON.parse(event.data));
-                });
-            }
-        } else {
-            console.log('Port ---> Shared worker', event, new Date().toISOString());
-            const { socketPayload } = event.data;
-            socket.send(JSON.stringify(socketPayload));
-        }
-
+        console.log('Port ---> Shared worker', event, new Date().toISOString());
+        socket.send(JSON.stringify(event.data));
     }
-
-    // port.start();
 }

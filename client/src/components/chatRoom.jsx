@@ -2,6 +2,8 @@ import { Card, Input, Skeleton } from 'antd';
 import { useEffect, useRef, useState } from 'react';
 
 import { getRoomMessages } from '../apis/rooms';
+import { sharedWorker } from './chatApp';
+import { create_message } from '../config/socketActions';
 
 const Message = ({ children, isUser }) => {
     return (
@@ -11,8 +13,11 @@ const Message = ({ children, isUser }) => {
                     display: 'inline-block',
                     padding: '5px 10px',
                     borderColor: isUser ? '#91caff' : '#f0f2f5',
+
                 }}
-                bodyStyle={{ padding: 0 }}
+                styles={{
+                    body: { padding: 0 }
+                }}
             >
                 {children}
             </Card>
@@ -20,7 +25,7 @@ const Message = ({ children, isUser }) => {
     );
 };
 
-const ChatRoom = ({ roomId, socket, userEmail, selectedRoom }) => {
+const ChatRoom = ({ roomId, userEmail, selectedRoom }) => {
     const [value, setValue] = useState('');
     const [messages, setMessages] = useState([]);
     const [isGettingRoomMessages, setIsGettingRoomMessages] = useState(false);
@@ -29,38 +34,34 @@ const ChatRoom = ({ roomId, socket, userEmail, selectedRoom }) => {
 
     const handleSendMessage = () => {
         const messagePayload = {
-            action: 'create_message',
+            action: create_message,
             message: value,
             room_id: roomId,
             sender: userEmail,
         }
 
-        socket.send(JSON.stringify(messagePayload));
+        sharedWorker.port.postMessage(messagePayload);
         setValue('');
     }
 
     const messageListenerRef = useRef(null);
 
     useEffect(() => {
-        if (!socket) return;
-
         const addCurRoomMessageListener = (event) => {
-            const data = JSON.parse(event.data);
-
-            if (data.action === "create_message") {
-                setMessages(prevMessages => [...prevMessages, data]);
+            if (event.data.action === create_message) {
+                setMessages(prevMessages => [...prevMessages, event.data]);
             }
         }
 
-        socket.addEventListener("message", addCurRoomMessageListener);
+        sharedWorker.port.addEventListener("message", addCurRoomMessageListener);
         messageListenerRef.current = addCurRoomMessageListener;
 
         return () => {
             // prevent event listener being added twice
-            socket.removeEventListener("message", messageListenerRef.current);
+            sharedWorker.port.removeEventListener("message", messageListenerRef.current);
             // messageListenerRef.current = null;
         }
-    }, [roomId, socket]);
+    }, [roomId]);
 
     useEffect(() => {
         if (selectedRoom) {

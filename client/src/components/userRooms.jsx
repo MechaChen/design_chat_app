@@ -3,9 +3,9 @@ import { List } from 'antd';
 import { useState, useEffect, useRef } from 'react';
 
 import { sharedWorker } from './chatApp';
-import { get_user_rooms } from '../config/socketActions';
+import { create_room, get_user_rooms } from '../config/socketActions';
 
-export default function UserRooms({ socket, userEmail, selectedRoom, setSelectedRoom }) {
+export default function UserRooms({ userEmail, selectedRoom, setSelectedRoom }) {
 
     const [userRooms, setUserRooms] = useState([]);
     const isUserRoomsInit = useRef(false);
@@ -18,40 +18,24 @@ export default function UserRooms({ socket, userEmail, selectedRoom, setSelected
             user_id: userEmail,
         }
 
-        sharedWorker.port.postMessage({
-            type: 'not init socket',
-            socketPayload: userRoomsPayload
-        });
-
-        
+        //  initial get user rooms
+        sharedWorker.port.postMessage(userRoomsPayload);
 
         sharedWorker.port.addEventListener('message', (event) => {
-            console.log('UserRooms received socket action from Shared worker', event);
+            console.log('Shared worker ---> UserRooms', event);
 
             if (event.data.action === get_user_rooms) {
                 setUserRooms(event.data.data);
+            }
+
+            if (event.data.action === create_room) {
+                sharedWorker.port.postMessage(userRoomsPayload);
             }
         })
 
         sharedWorker.port.start();
 
         isUserRoomsInit.current = true;
-        // socket.addEventListener("message", (event) => {
-        //     const data = JSON.parse(event.data);
-        //     // console.log('userRooms data ======>', data);
-
-        //     if (data.action === "create_room") {
-        //         const userRoomsPayload = {
-        //             action: "get_user_rooms",
-        //             user_id: userEmail,
-        //         }
-        //         socket.send(JSON.stringify(userRoomsPayload));
-        //     }
-
-        //     if (data.action === "get_user_rooms") {
-        //         setUserRooms(data.data);
-        //     }
-        // });
     }, [userEmail]);
 
     return (

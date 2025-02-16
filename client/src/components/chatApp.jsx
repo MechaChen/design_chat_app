@@ -19,24 +19,13 @@ export default function ChatApp({ userEmail, setUserEmail }) {
 
 
     useEffect(() => {
-        // const socket = connectChatRoomSocket();
-        // setSocket(socket);
-
         const connectionPayload = {
             action: "create_connection",
             user_id: userEmail,
         }
-        // const userRoomsPayload = {
-        //     action: "get_user_rooms",
-        //     user_id: userEmail,
-        // }
-
 
         if (!isSocketInit.current) {    
-            sharedWorker.port.postMessage({
-                type: 'initSocket',
-                socketPayload: connectionPayload,
-            });
+            sharedWorker.port.postMessage(connectionPayload);
         }
 
         sharedWorker.port.addEventListener('message', (event) => {
@@ -50,8 +39,6 @@ export default function ChatApp({ userEmail, setUserEmail }) {
         console.log('ChatApp component mounted', sharedWorker);
 
         isSocketInit.current = true;
-        // socket.send(JSON.stringify(connectionPayload));
-        // socket.send(JSON.stringify(userRoomsPayload));
 
         // socket.addEventListener("message", (event) => {
         //     const parsedEvent = JSON.parse(event.data);
@@ -88,21 +75,19 @@ export default function ChatApp({ userEmail, setUserEmail }) {
                 <h2 style={{ marginRight: '10px' }}>User: {userEmail}</h2>
                 {/* <Button onClick={logout}>Logout</Button> */}
             </Flex>
-            {/* <CreateRoom userEmail={userEmail} socket={socket} /> */}
+            <CreateRoom userEmail={userEmail} />
             <Flex justify="space-between" align="flex-start" style={{ marginTop: '50px' }}>
                 <UserRooms
                     userEmail={userEmail}
-                    // isConnectionBuilt={isConnectionBuilt}
                     selectedRoom={selectedRoom}
                     setSelectedRoom={setSelectedRoom}
                 />
-                {/* <ChatRoom
+                <ChatRoom
                     roomId={selectedRoom?.room_id}
                     selectedRoom={selectedRoom}
                     setSelectedRoom={setSelectedRoom}
-                    socket={socket}
                     userEmail={userEmail}
-                /> */}
+                />
             </Flex>
         </div>
     );

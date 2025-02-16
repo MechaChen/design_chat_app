@@ -2,8 +2,10 @@ import { Button, Select, Space } from 'antd';
 import { useEffect, useState } from 'react';
 
 import { getUsers } from '../apis/users';
+import { sharedWorker } from './chatApp';
+import { create_room } from '../config/socketActions';
 
-const CreateRoom = ({ userEmail, socket }) => {
+const CreateRoom = ({ userEmail }) => {
 
     // REST API
     const [users, setUsers] = useState([]);
@@ -28,15 +30,15 @@ const CreateRoom = ({ userEmail, socket }) => {
 
     // WebSocket
     const createRoom = () => {
-        if (socket && selectedUser.length > 0) {
+        if (selectedUser.length > 0) {
 
-            const message = JSON.stringify({
-                action: "create_room",
+            const createRoomPayload = {
+                action: create_room,
                 participants: [userEmail, ...selectedUser],
                 created_at: new Date().toISOString(),
-            });
+            };
 
-            socket.send(message);
+            sharedWorker.port.postMessage(createRoomPayload);
             setSelectedUser(null);
         }
     }
