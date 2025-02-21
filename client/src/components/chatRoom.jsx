@@ -1,9 +1,11 @@
-import { Card, Input, Skeleton } from 'antd';
-import { useEffect, useRef, useState } from 'react';
+import { Card, Input, Skeleton, Upload } from 'antd';
+import { useEffect, useRef, useState, forwardRef } from 'react';
+import { PlusOutlined } from '@ant-design/icons';
 
 import { getRoomMessages } from '../apis/rooms';
-import { sharedWorker } from './chatApp';
 import { create_message } from '../config/socketActions';
+import { initDB, storeDraftMessage } from '../utils/clientStorage';
+import debounce from '../utils/debounde';
 
 const Message = ({ children, isUser }) => {
     return (
@@ -25,7 +27,16 @@ const Message = ({ children, isUser }) => {
     );
 };
 
-const ChatRoom = ({ roomId, userEmail, selectedRoom }) => {
+const UploadButton = () => {
+    return (
+        <button style={{ border: 0, background: 'none' }} type="button">
+            <PlusOutlined />
+            <div style={{ marginTop: 8 }}>Upload</div>
+        </button>
+    );
+}
+
+const ChatRoom = forwardRef(({ roomId, userEmail, selectedRoom }, sharedWorkerRef) => {
     const [value, setValue] = useState('');
     const [messages, setMessages] = useState([]);
     const [isGettingRoomMessages, setIsGettingRoomMessages] = useState(false);
@@ -40,11 +51,10 @@ const ChatRoom = ({ roomId, userEmail, selectedRoom }) => {
             sender: userEmail,
         }
 
-        sharedWorker.port.postMessage(messagePayload);
+        sharedWorkerRef.current?.port.postMessage(messagePayload);
         setValue('');
     }
 
-    const messageListenerRef = useRef(null);
 
     useEffect(() => {
         const addCurRoomMessageListener = (event) => {
@@ -53,15 +63,13 @@ const ChatRoom = ({ roomId, userEmail, selectedRoom }) => {
             }
         }
 
-        sharedWorker.port.addEventListener("message", addCurRoomMessageListener);
-        messageListenerRef.current = addCurRoomMessageListener;
+        sharedWorkerRef.current?.port.addEventListener("message", addCurRoomMessageListener);
 
         return () => {
             // prevent event listener being added twice
-            sharedWorker.port.removeEventListener("message", messageListenerRef.current);
-            // messageListenerRef.current = null;
+            sharedWorkerRef.current?.port.removeEventListener("message", addCurRoomMessageListener);
         }
-    }, [roomId]);
+    }, [roomId, sharedWorkerRef]);
 
     useEffect(() => {
         if (selectedRoom) {
@@ -78,6 +86,32 @@ const ChatRoom = ({ roomId, userEmail, selectedRoom }) => {
             messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
         }
     }, [messages]);
+
+
+    // file upload
+    const [fileList, setFileList] = useState([]);
+    const [draftMessageDB, setDraftMessageDB] = useState(null);
+
+    const handleFileChange = ({ fileList: newFileList }) => {
+        setFileList(newFileList);
+        storeDraftMessage(draftMessageDB, { roomId, userId: userEmail, message: value, fileList: newFileList });
+    }
+
+    const saveDraftMessage = (e) => {
+        setValue(e.target.value)
+
+        const debouncedSaveDraftMessage = debounce(() => {
+            storeDraftMessage(
+                draftMessageDB,
+                { roomId, userId: userEmail, message: e.target.value, fileList: fileList });
+        }, 500);
+
+        debouncedSaveDraftMessage();
+    };
+
+    useEffect(() => {
+        initDB().then(setDraftMessageDB);
+    }, [value, fileList]);
 
 
     return (
@@ -105,17 +139,34 @@ const ChatRoom = ({ roomId, userEmail, selectedRoom }) => {
                         })}
                         <div ref={messagesEndRef} />
                     </Card>
-                    <Input
-                        disabled={isGettingRoomMessages}
-                        placeholder="Your message"
-                        value={value}
-                        onChange={(e) => setValue(e.target.value)}
-                        onPressEnter={handleSendMessage}
-                    />
+                    <Card styles={{ body: { paddingTop: 10, paddingBottom: 10 } }}>
+                        <Upload
+                            listType="picture-card"
+                            fileList={fileList}
+                            onChange={handleFileChange}
+                            customRequest={({ file, onSuccess }) => {
+                                console.log(file);
+                                onSuccess('upload successfully');
+                            }}
+                        >
+                        <UploadButton />
+                        </Upload>
+                        <Input
+                            style={{ paddingTop: '20px', paddingLeft: 0 }}
+                            variant="borderless"
+                            disabled={isGettingRoomMessages}
+                            placeholder="Your message"
+                            value={value}
+                            onChange={saveDraftMessage}
+                            onPressEnter={handleSendMessage}
+                        />
+                    </Card>
                 </>
             )}
         </div>
     );
-};
+});
+
+ChatRoom.displayName = 'ChatRoom';
 
 export default ChatRoom;

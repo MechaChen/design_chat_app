@@ -1,11 +1,10 @@
 import { Button, Select, Space } from 'antd';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, forwardRef } from 'react';
 
 import { getUsers } from '../apis/users';
-import { sharedWorker } from './chatApp';
 import { create_room } from '../config/socketActions';
 
-const CreateRoom = ({ userEmail }) => {
+const CreateRoom = forwardRef(function CreateRoom({ userEmail }, sharedWorkerRef) {
 
     // REST API
     const [users, setUsers] = useState([]);
@@ -38,7 +37,7 @@ const CreateRoom = ({ userEmail }) => {
                 created_at: new Date().toISOString(),
             };
 
-            sharedWorker.port.postMessage(createRoomPayload);
+            sharedWorkerRef.current?.port.postMessage(createRoomPayload);
             setSelectedUser(null);
         }
     }
@@ -65,6 +64,6 @@ const CreateRoom = ({ userEmail }) => {
             </Space>
         </>
     );
-};
+});
 
 export default CreateRoom;

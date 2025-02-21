@@ -1,14 +1,14 @@
 import { Avatar, Flex } from 'antd';
 import { List } from 'antd';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, forwardRef } from 'react';
 
-import { sharedWorker } from './chatApp';
 import { create_room, get_user_rooms } from '../config/socketActions';
 
-export default function UserRooms({ userEmail, selectedRoom, setSelectedRoom }) {
-
+const UserRooms = forwardRef(function UserRooms({ userEmail, selectedRoom, setSelectedRoom }, sharedWorkerRef) {
     const [userRooms, setUserRooms] = useState([]);
     const isUserRoomsInit = useRef(false);
+
+    console.log('sharedWorkerRef', sharedWorkerRef);
 
     useEffect(() => {
         if (isUserRoomsInit.current) return;
@@ -19,9 +19,9 @@ export default function UserRooms({ userEmail, selectedRoom, setSelectedRoom }) 
         }
 
         //  initial get user rooms
-        sharedWorker.port.postMessage(userRoomsPayload);
+        sharedWorkerRef.current?.port.postMessage(userRoomsPayload);
 
-        sharedWorker.port.addEventListener('message', (event) => {
+        sharedWorkerRef.current?.port.addEventListener('message', (event) => {
             console.log('Shared worker ---> UserRooms', event);
 
             if (event.data.action === get_user_rooms) {
@@ -29,14 +29,14 @@ export default function UserRooms({ userEmail, selectedRoom, setSelectedRoom }) 
             }
 
             if (event.data.action === create_room) {
-                sharedWorker.port.postMessage(userRoomsPayload);
+                sharedWorkerRef.current?.port.postMessage(userRoomsPayload);
             }
         })
 
-        sharedWorker.port.start();
+        sharedWorkerRef.current?.port.start();
 
         isUserRoomsInit.current = true;
-    }, [userEmail]);
+    }, [sharedWorkerRef, userEmail]);
 
     return (
         <List
@@ -67,4 +67,6 @@ export default function UserRooms({ userEmail, selectedRoom, setSelectedRoom }) 
             )}
         />
     );
-}
+});
+
+export default UserRooms;

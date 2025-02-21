@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, lazy } from 'react';
 import { Button, Form, Input, Alert, Typography } from 'antd';
 
 import { createUser } from './apis/users';
-import ChatApp from './components/chatApp';
+const ChatApp = lazy(() => import('./components/chatApp'));
 
 import './App.css'
 
@@ -72,6 +72,8 @@ function LoginForm({ setUserEmail }) {
 function App() {
   const [userEmail, setUserEmail] = useState(null);
 
+  console.log('userEmail =====>', userEmail);
+
   return (
     <div>
       <Typography.Title level={1}>Chat Room App</Typography.Title>
@@ -79,7 +81,7 @@ function App() {
       <br />
 
       {userEmail
-        ? <ChatApp userEmail={userEmail} setUserEmail={setUserEmail} />
+        ? <ChatApp userEmail={userEmail} setUserEmail={setUserEmail} key={Date.now()} />
         : <LoginForm setUserEmail={setUserEmail} />
       }
     </div>
