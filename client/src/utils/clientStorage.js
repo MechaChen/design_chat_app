@@ -24,3 +24,6 @@ export async function storeDraftMessage(db, { roomId, userId, message, fileList 
     await db.put(draftMessageStoreName, { roomId, userId, message, fileList });
 }
 
+export async function getDraftMessage(db, { roomId }) {
+    return await db.get(draftMessageStoreName, roomId);
+}
