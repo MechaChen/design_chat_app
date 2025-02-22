@@ -25,8 +25,6 @@ self.onconnect = (event) => {
     const port = event.ports[0];
     connections.push(port);
 
-    console.log('connections =====>', connections);
-
     if (!socket) {
         socket = connectChatRoomSocket(port);
     } else {
@@ -38,8 +36,6 @@ self.onconnect = (event) => {
             connections = connections.filter(connection => connection !== port);
 
             if (connections.length === 0) {
-                console.log('socket.send =====>', socket);
-                console.log('connections =====>', connections);
                 socket.send(JSON.stringify(event.data));
                 socket.close();
                 socket = null;

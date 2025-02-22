@@ -8,8 +8,6 @@ const UserRooms = forwardRef(function UserRooms({ userEmail, selectedRoom, setSe
     const [userRooms, setUserRooms] = useState([]);
     const isUserRoomsInit = useRef(false);
 
-    console.log('sharedWorkerRef', sharedWorkerRef);
-
     useEffect(() => {
         if (isUserRoomsInit.current) return;
 

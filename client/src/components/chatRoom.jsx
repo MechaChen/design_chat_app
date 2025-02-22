@@ -91,10 +91,11 @@ const ChatRoom = forwardRef(({ roomId, userEmail, selectedRoom }, sharedWorkerRe
     // file upload
     const [fileList, setFileList] = useState([]);
     const [draftMessageDB, setDraftMessageDB] = useState(null);
+    const initDraftMessage = useRef(false);
 
     const handleFileChange = ({ fileList: newFileList }) => {
         setFileList(newFileList);
-        storeDraftMessage(draftMessageDB, { roomId, userId: userEmail, message: value, fileList: newFileList });
+        storeDraftMessage(draftMessageDB, { userIdAndRoomId: `${userEmail}_${roomId}`, message: value, fileList: newFileList });
     }
 
     const saveDraftMessage = (e) => {
@@ -103,7 +104,7 @@ const ChatRoom = forwardRef(({ roomId, userEmail, selectedRoom }, sharedWorkerRe
         const debouncedSaveDraftMessage = debounce(() => {
             storeDraftMessage(
                 draftMessageDB,
-                { roomId, userId: userEmail, message: e.target.value, fileList: fileList });
+                { userIdAndRoomId: `${userEmail}_${roomId}`, message: e.target.value, fileList: fileList });
         }, 500);
 
         debouncedSaveDraftMessage();
@@ -114,12 +115,13 @@ const ChatRoom = forwardRef(({ roomId, userEmail, selectedRoom }, sharedWorkerRe
     }, [value, fileList]);
 
     useEffect(() => {
-        if (!draftMessageDB) return;
-        getDraftMessage(draftMessageDB, { roomId }).then((draftMessage) => {
+        if (!draftMessageDB || initDraftMessage.current) return;
+        getDraftMessage(draftMessageDB, { userIdAndRoomId: `${userEmail}_${roomId}` }).then((draftMessage) => {
             setValue(draftMessage.message);
             setFileList(draftMessage.fileList);
+            initDraftMessage.current = true;
         });
-    }, [draftMessageDB, roomId]);
+    }, [draftMessageDB, userEmail, roomId]);
 
 
     return (
@@ -152,8 +154,7 @@ const ChatRoom = forwardRef(({ roomId, userEmail, selectedRoom }, sharedWorkerRe
                             listType="picture-card"
                             fileList={fileList}
                             onChange={handleFileChange}
-                            customRequest={({ file, onSuccess }) => {
-                                console.log(file);
+                            customRequest={({ onSuccess }) => {
                                 onSuccess('upload successfully');
                             }}
                         >

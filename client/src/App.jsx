@@ -72,8 +72,6 @@ function LoginForm({ setUserEmail }) {
 function App() {
   const [userEmail, setUserEmail] = useState(null);
 
-  console.log('userEmail =====>', userEmail);
-
   return (
     <div>
       <Typography.Title level={1}>Chat Room App</Typography.Title>

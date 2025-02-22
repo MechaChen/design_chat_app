@@ -1,18 +1,33 @@
 import { openDB } from 'idb';
 
 const dbName = 'chatApp';
-const dbVersion = 1;
+const dbNewestVersion = 2;
 const draftMessageStoreName = 'draftMessages';
-const draftMessageStoreKeyPath = 'roomId';
+const draftMessageStoreKeyPath = 'userIdAndRoomId';
 
 export async function initDB() {
-    const db = await openDB(dbName, dbVersion, {
-        upgrade(db) {
-            if (!db.objectStoreNames.contains(draftMessageStoreName)) {
-                db.createObjectStore(
-                    draftMessageStoreName,
-                    { keyPath: draftMessageStoreKeyPath }
-                );
+    const db = await openDB(dbName, dbNewestVersion, {
+        async upgrade(db, oldVersion, newVersion, transaction) {
+            switch (oldVersion) {
+                // update draft message store keyPath from roomId to userIdAndRoomId
+                case 1: { 
+                    let oldDrafts = [];
+
+                    if (db.objectStoreNames.contains(draftMessageStoreName)) {
+                        const oldStore = transaction.objectStore(draftMessageStoreName);
+                        oldDrafts = await oldStore.getAll();
+                        db.deleteObjectStore(draftMessageStoreName);
+                    }
+
+                    const newDraftMessageStore = db.createObjectStore(draftMessageStoreName, {
+                        keyPath: draftMessageStoreKeyPath
+                    });
+
+                    oldDrafts.forEach((draft) => {
+                        draft.userIdAndRoomId = `${draft.userId}_${draft.roomId}`;
+                        newDraftMessageStore.add(draft);
+                    });
+                }
             }
         },
     });
@@ -20,10 +35,10 @@ export async function initDB() {
     return db;
 }
 
-export async function storeDraftMessage(db, { roomId, userId, message, fileList }) {
-    await db.put(draftMessageStoreName, { roomId, userId, message, fileList });
+export async function storeDraftMessage(db, { userIdAndRoomId, message, fileList }) {
+    await db.put(draftMessageStoreName, { userIdAndRoomId, message, fileList });
 }
 
-export async function getDraftMessage(db, { roomId }) {
-    return await db.get(draftMessageStoreName, roomId);
+export async function getDraftMessage(db, { userIdAndRoomId }) {
+    return await db.get(draftMessageStoreName, userIdAndRoomId);
 }
