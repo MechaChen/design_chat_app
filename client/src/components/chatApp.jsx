@@ -106,13 +106,15 @@ export default function ChatApp({ userEmail, setUserEmail }) {
                     setSelectedRoom={setSelectedRoom}
                     ref={sharedWorkerRef}
                 />
-                <ChatRoom
-                    roomId={selectedRoom?.room_id}
-                    selectedRoom={selectedRoom}
-                    setSelectedRoom={setSelectedRoom}
-                    userEmail={userEmail}
-                    ref={sharedWorkerRef}
-                />
+                {selectedRoom && (
+                    <ChatRoom
+                        roomId={selectedRoom?.room_id}
+                        selectedRoom={selectedRoom}
+                        setSelectedRoom={setSelectedRoom}
+                        userEmail={userEmail}
+                        ref={sharedWorkerRef}
+                    />
+                )}
             </Flex>
         </div>
     );

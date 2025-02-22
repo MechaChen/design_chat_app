@@ -90,12 +90,11 @@ const ChatRoom = forwardRef(({ roomId, userEmail, selectedRoom }, sharedWorkerRe
 
     // file upload
     const [fileList, setFileList] = useState([]);
-    const [draftMessageDB, setDraftMessageDB] = useState(null);
-    const initDraftMessage = useRef(false);
+    const draftMessageDBRef = useRef(null);
 
     const handleFileChange = ({ fileList: newFileList }) => {
         setFileList(newFileList);
-        storeDraftMessage(draftMessageDB, { userIdAndRoomId: `${userEmail}_${roomId}`, message: value, fileList: newFileList });
+        storeDraftMessage(draftMessageDBRef.current, { userIdAndRoomId: `${userEmail}_${roomId}`, message: value, fileList: newFileList });
     }
 
     const saveDraftMessage = (e) => {
@@ -103,7 +102,7 @@ const ChatRoom = forwardRef(({ roomId, userEmail, selectedRoom }, sharedWorkerRe
 
         const debouncedSaveDraftMessage = debounce(() => {
             storeDraftMessage(
-                draftMessageDB,
+                draftMessageDBRef.current,
                 { userIdAndRoomId: `${userEmail}_${roomId}`, message: e.target.value, fileList: fileList });
         }, 500);
 
@@ -111,67 +110,64 @@ const ChatRoom = forwardRef(({ roomId, userEmail, selectedRoom }, sharedWorkerRe
     };
 
     useEffect(() => {
-        initDB().then(setDraftMessageDB);
-    }, [value, fileList]);
-
-    useEffect(() => {
-        if (!draftMessageDB || initDraftMessage.current) return;
-        getDraftMessage(draftMessageDB, { userIdAndRoomId: `${userEmail}_${roomId}` }).then((draftMessage) => {
+        async function getRoomDraftMessage() {
+            draftMessageDBRef.current = await initDB();
+            const draftMessage = await getDraftMessage(draftMessageDBRef.current, { userIdAndRoomId: `${userEmail}_${roomId}` });
             setValue(draftMessage.message);
             setFileList(draftMessage.fileList);
-            initDraftMessage.current = true;
-        });
-    }, [draftMessageDB, userEmail, roomId]);
+        }
+
+        getRoomDraftMessage();
+    }, [roomId, userEmail]);
+
 
 
     return (
         <div style={{ width: '58%' }}>
-            {roomId && (
-                <>
-                    <Card style={{ marginBottom: '10px', height: '500px', overflowY: 'auto' }}>
-                        {isGettingRoomMessages ? <Skeleton active /> : messages.map((message) => {
-                            const isUser = message.sender === userEmail;
-                            return (
-                                <div key={message.message_id} style={{ paddingBottom: '10px' }}>
-                                    {!isUser && (<div style={{ fontSize: '12px', color: '#888' }}>
-                                        {message.sender.split('@')[0]}
-                                    </div>)}
+            <>
+                <Card style={{ marginBottom: '10px', height: '500px', overflowY: 'auto' }}>
+                    {isGettingRoomMessages ? <Skeleton active /> : messages.map((message) => {
+                        const isUser = message.sender === userEmail;
+                        return (
+                            <div key={message.message_id} style={{ paddingBottom: '10px' }}>
+                                {!isUser && (<div style={{ fontSize: '12px', color: '#888' }}>
+                                    {message.sender.split('@')[0]}
+                                </div>)}
 
-                                    <Message
-                                        key={message.message_id}
-                                        isUser={isUser}
-                                        message={message}
-                                    >
-                                        {message.message}
-                                    </Message>
-                                </div>
-                            )
-                        })}
-                        <div ref={messagesEndRef} />
-                    </Card>
-                    <Card styles={{ body: { paddingTop: 10, paddingBottom: 10 } }}>
-                        <Upload
-                            listType="picture-card"
-                            fileList={fileList}
-                            onChange={handleFileChange}
-                            customRequest={({ onSuccess }) => {
-                                onSuccess('upload successfully');
-                            }}
-                        >
-                        <UploadButton />
-                        </Upload>
-                        <Input
-                            style={{ paddingTop: '20px', paddingLeft: 0 }}
-                            variant="borderless"
-                            disabled={isGettingRoomMessages}
-                            placeholder="Your message"
-                            value={value}
-                            onChange={saveDraftMessage}
-                            onPressEnter={handleSendMessage}
-                        />
-                    </Card>
-                </>
-            )}
+                                <Message
+                                    key={message.message_id}
+                                    isUser={isUser}
+                                    message={message}
+                                >
+                                    {message.message}
+                                </Message>
+                            </div>
+                        )
+                    })}
+                    <div ref={messagesEndRef} />
+                </Card>
+                <Card styles={{ body: { paddingTop: 10, paddingBottom: 10 } }}>
+                    <Upload
+                        listType="picture-card"
+                        fileList={fileList}
+                        onChange={handleFileChange}
+                        customRequest={({ onSuccess }) => {
+                            onSuccess('upload successfully');
+                        }}
+                    >
+                    <UploadButton />
+                    </Upload>
+                    <Input
+                        style={{ paddingTop: '20px', paddingLeft: 0 }}
+                        variant="borderless"
+                        disabled={isGettingRoomMessages}
+                        placeholder="Your message"
+                        value={value}
+                        onChange={saveDraftMessage}
+                        onPressEnter={handleSendMessage}
+                    />
+                </Card>
+            </>
         </div>
     );
 });
