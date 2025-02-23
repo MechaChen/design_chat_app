@@ -1,8 +1,8 @@
 # Design a Chat Room
 
 ## Tech stack
-- Frontend: React, Ant Design, Vite, axios
-- Backend: Node.js, AWS Lambda, API Gateway, DynamoDB, Web socket
+![image](https://github.com/user-attachments/assets/f47f7f2a-289a-401c-b1ac-0fe3c98a108e)
+
 
 &nbsp;
 
@@ -10,7 +10,7 @@
 
 ## Functional (Basic) requirements
 
-Results:
+Results：
 
 https://github.com/user-attachments/assets/8316b8db-1616-4842-b5e2-182e083446c1
 
@@ -52,7 +52,7 @@ https://github.com/user-attachments/assets/8316b8db-1616-4842-b5e2-182e083446c1
 
 #### Many to many connection
 
-Results:
+Results：
 
 https://github.com/user-attachments/assets/8f094ef2-0271-4ca3-827b-588591efc53c
 
@@ -67,7 +67,12 @@ https://github.com/user-attachments/assets/8f094ef2-0271-4ca3-827b-588591efc53c
 
 #### Share connection for all the tabs and windows
 
-Result:
+Problem：
+- Unnecessary multiple connections builts due to multiple tabs opened by the same user
+
+&nbsp;
+
+Result：
 
 https://github.com/user-attachments/assets/2fef058e-4738-42a7-9652-ff95880bf7cc
 
@@ -84,15 +89,26 @@ https://github.com/user-attachments/assets/2fef058e-4738-42a7-9652-ff95880bf7cc
 
 &nbsp;
 
-#### Show user online/offline status
-
-&nbsp;
-
 #### Store draft in indexDB
 
+Problem：
+- Unsent text and image message will disappear
+
 &nbsp;
 
-#### Show Typing indicator
+Result：
+
+https://github.com/user-attachments/assets/a1ebdc05-81eb-4835-9904-5b02ddbe0938
+
+- [x] Be able to upload and preview uploaded image by antd <Upload />
+- [x] Create chat room indexedDB database
+- [x] Create draftMessage objectStore(table) with `keyPath: ${roomId}` to save draft text and image messages
+- [x] Save text message when text input change
+- [x] Save image message when <Upload /> change
+- [x] Show draft message when open chat room
+- [x] Fix wrong draft message in chat room by upgrade indexedDB with draftMessage objectStore with `keyPath: ${userId}_${roomId}`
+
+&nbsp;
 
 
 #### Show message send, read status
