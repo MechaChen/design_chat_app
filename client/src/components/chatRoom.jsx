@@ -36,24 +36,15 @@ const UploadButton = () => {
     );
 }
 
+const draftMessageChannel = new BroadcastChannel('draftMessageChannel');
+
+const defaultDraftText = '';
+const defaultDraftFileList = [];
+
 const ChatRoom = forwardRef(({ roomId, userEmail, selectedRoom }, sharedWorkerRef) => {
-    const [value, setValue] = useState('');
     const [messages, setMessages] = useState([]);
     const [isGettingRoomMessages, setIsGettingRoomMessages] = useState(false);
     const messagesEndRef = useRef(null);
-
-
-    const handleSendMessage = () => {
-        const messagePayload = {
-            action: create_message,
-            message: value,
-            room_id: roomId,
-            sender: userEmail,
-        }
-
-        sharedWorkerRef.current?.port.postMessage(messagePayload);
-        setValue('');
-    }
 
 
     useEffect(() => {
@@ -88,33 +79,81 @@ const ChatRoom = forwardRef(({ roomId, userEmail, selectedRoom }, sharedWorkerRe
     }, [messages]);
 
 
-    // file upload
-    const [fileList, setFileList] = useState([]);
+    // draft message
+    const [draftText, setDraftText] = useState(defaultDraftText);
+    const [draftFileList, setDraftFileList] = useState(defaultDraftFileList);
     const draftMessageDBRef = useRef(null);
 
+    const handleSendMessage = () => {
+        const messagePayload = {
+            action: create_message,
+            message: draftText,
+            room_id: roomId,
+            sender: userEmail,
+        }
+
+        sharedWorkerRef.current?.port.postMessage(messagePayload);
+        setDraftText('');
+    }
+
     const handleFileChange = ({ fileList: newFileList }) => {
-        setFileList(newFileList);
-        storeDraftMessage(draftMessageDBRef.current, { userIdAndRoomId: `${userEmail}_${roomId}`, message: value, fileList: newFileList });
+        console.log({ newFileList });
+
+        draftMessageChannel.postMessage({
+            type: 'updateDraftFileList',
+            userIdAndRoomId: `${userEmail}_${roomId}`,
+            fileList: newFileList
+        });
+        setDraftFileList(newFileList);
+        storeDraftMessage(draftMessageDBRef.current, { userIdAndRoomId: `${userEmail}_${roomId}`, message: draftText, fileList: newFileList });
     }
 
     const saveDraftMessage = (e) => {
-        setValue(e.target.value)
+        draftMessageChannel.postMessage({
+            type: 'updateDraftText',
+            userIdAndRoomId: `${userEmail}_${roomId}`,
+            message: e.target.value,
+        });
+        // setDraftText(e.target.value)
 
         const debouncedSaveDraftMessage = debounce(() => {
             storeDraftMessage(
                 draftMessageDBRef.current,
-                { userIdAndRoomId: `${userEmail}_${roomId}`, message: e.target.value, fileList: fileList });
+                { userIdAndRoomId: `${userEmail}_${roomId}`, message: e.target.value, fileList: draftFileList });
         }, 500);
 
         debouncedSaveDraftMessage();
     };
 
     useEffect(() => {
+        const updateDraftMessage = (event) => {
+            const userIdAndRoomId = event.data.userIdAndRoomId;
+
+            console.log({ userIdAndRoomId, userEmail, roomId });
+
+            if (event.data.type === 'updateDraftText' && userIdAndRoomId === `${userEmail}_${roomId}`) {
+                setDraftText(() => event.data.message);
+            } 
+            
+            if (event.data.type === 'updateDraftFileList' && userIdAndRoomId === `${userEmail}_${roomId}`) {
+                setDraftFileList(event.data.fileList);
+            }
+        }
+
+
+        draftMessageChannel.onmessage = updateDraftMessage;
+
+        return () => {
+            draftMessageChannel.onmessage = null;
+        }
+    }, [roomId, userEmail]);
+
+    useEffect(() => {
         async function getRoomDraftMessage() {
             draftMessageDBRef.current = await initDB();
             const draftMessage = await getDraftMessage(draftMessageDBRef.current, { userIdAndRoomId: `${userEmail}_${roomId}` });
-            setValue(draftMessage.message);
-            setFileList(draftMessage.fileList);
+            setDraftText(draftMessage?.message || defaultDraftText);
+            setDraftFileList(draftMessage?.fileList || defaultDraftFileList);
         }
 
         getRoomDraftMessage();
@@ -149,7 +188,7 @@ const ChatRoom = forwardRef(({ roomId, userEmail, selectedRoom }, sharedWorkerRe
                 <Card styles={{ body: { paddingTop: 10, paddingBottom: 10 } }}>
                     <Upload
                         listType="picture-card"
-                        fileList={fileList}
+                        fileList={draftFileList}
                         onChange={handleFileChange}
                         customRequest={({ onSuccess }) => {
                             onSuccess('upload successfully');
@@ -162,7 +201,7 @@ const ChatRoom = forwardRef(({ roomId, userEmail, selectedRoom }, sharedWorkerRe
                         variant="borderless"
                         disabled={isGettingRoomMessages}
                         placeholder="Your message"
-                        value={value}
+                        value={draftText}
                         onChange={saveDraftMessage}
                         onPressEnter={handleSendMessage}
                     />
