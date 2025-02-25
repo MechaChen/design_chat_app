@@ -5,7 +5,7 @@ import { PlusOutlined } from '@ant-design/icons';
 import { getRoomMessages } from '../apis/rooms';
 import { create_message } from '../config/socketActions';
 import { getDraftMessage, initDB, storeDraftMessage } from '../utils/clientStorage';
-import debounce from '../utils/debounde';
+import debounce from '../utils/debounce';
 
 const Message = ({ children, isUser }) => {
     return (
@@ -114,7 +114,7 @@ const ChatRoom = forwardRef(({ roomId, userEmail, selectedRoom }, sharedWorkerRe
             userIdAndRoomId: `${userEmail}_${roomId}`,
             message: e.target.value,
         });
-        // setDraftText(e.target.value)
+        setDraftText(e.target.value)
 
         const debouncedSaveDraftMessage = debounce(() => {
             storeDraftMessage(
