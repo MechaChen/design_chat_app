@@ -1,11 +1,13 @@
 import { Card, Input, Skeleton, Upload } from 'antd';
 import { useEffect, useRef, useState, forwardRef } from 'react';
 import { PlusOutlined } from '@ant-design/icons';
+import { v4 as uuidv4 } from 'uuid';
 
 import { getRoomMessages } from '../apis/rooms';
 import { create_message } from '../config/socketActions';
 import { getDraftMessage, initDB, storeDraftMessage } from '../utils/clientStorage';
 import debounce from '../utils/debounce';
+import messageStatus from '../config/messageStatus';
 
 const Message = ({ children, isUser }) => {
     return (
@@ -40,6 +42,25 @@ const draftMessageChannel = new BroadcastChannel('draftMessageChannel');
 
 const defaultDraftText = '';
 const defaultDraftFileList = [];
+
+// update message from array data structure to Map
+
+// in-flight message, 
+// - auto retry and keep sending time order
+// - exponential backoff retry 3 times
+// - if failed, make message status as failed
+// - if close app, mark it as failed
+
+// success message
+// - if message success, find the message in message and mark it as success
+
+// failed message
+// - provide retry button in UI
+// - store in the indexedDB
+// - if new message is send, grab all failed messages and remove from messages list, 
+//  add new message to messages list first, then re-add failed messages to the end of the list to have better UX and performance
+
+const MAX_RETRY_TIMES = 3;
 
 const ChatRoom = forwardRef(({ roomId, userEmail, selectedRoom }, sharedWorkerRef) => {
     const [messages, setMessages] = useState([]);
@@ -84,21 +105,56 @@ const ChatRoom = forwardRef(({ roomId, userEmail, selectedRoom }, sharedWorkerRe
     const [draftFileList, setDraftFileList] = useState(defaultDraftFileList);
     const draftMessageDBRef = useRef(null);
 
-    const handleSendMessage = () => {
-        const messagePayload = {
-            action: create_message,
-            message: draftText,
-            room_id: roomId,
-            sender: userEmail,
+    const retryMessage = (messageId) => {
+        const message = messages.get(messageId);
+
+        // exceed max retry times, set message to failed
+        if (message.status === messageStatus.inFlight
+            && message.retryTimes > MAX_RETRY_TIMES
+        ) {
+            messages.set(messageId, {
+                ...message,
+                status: messageStatus.failed,
+            });
+            return;
         }
 
-        sharedWorkerRef.current?.port.postMessage(messagePayload);
+        const newRetryTimes = message.retryTimes + 1;
+        messages.set(messageId, {
+            ...message,
+            retryTimes: newRetryTimes,
+        });
+
+        // if within max retry times, retry
+        if (message.status === messageStatus.inFlight
+            && message.retryTimes <= MAX_RETRY_TIMES
+        ) {
+            setTimeout(() => {
+                sharedWorkerRef.current?.port.postMessage(message);
+                retryMessage(messageId);
+
+            }, Math.pow(2, newRetryTimes) * 1000);
+        }
+    }
+
+    const handleSendMessage = () => {
+        const newMessagePayload = {
+            action: create_message,
+            message: draftText,
+            message_id: uuidv4(),
+            room_id: roomId,
+            sender: userEmail,
+            status: messageStatus.inFlight,
+        }
+
+        sharedWorkerRef.current?.port.postMessage(newMessagePayload);
+        retryMessage(newMessagePayload.message_id);
         setDraftText('');
+
+        setMessages(prevMessages => [...prevMessages, newMessagePayload]);
     }
 
     const handleFileChange = ({ fileList: newFileList }) => {
-        console.log({ newFileList });
-
         draftMessageChannel.postMessage({
             type: 'updateDraftFileList',
             userIdAndRoomId: `${userEmail}_${roomId}`,
@@ -128,8 +184,6 @@ const ChatRoom = forwardRef(({ roomId, userEmail, selectedRoom }, sharedWorkerRe
     useEffect(() => {
         const updateDraftMessage = (event) => {
             const userIdAndRoomId = event.data.userIdAndRoomId;
-
-            console.log({ userIdAndRoomId, userEmail, roomId });
 
             if (event.data.type === 'updateDraftText' && userIdAndRoomId === `${userEmail}_${roomId}`) {
                 setDraftText(() => event.data.message);
