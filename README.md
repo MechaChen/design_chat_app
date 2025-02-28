@@ -111,5 +111,20 @@ https://github.com/user-attachments/assets/a1ebdc05-81eb-4835-9904-5b02ddbe0938
 &nbsp;
 
 
-#### Show message send, read status
+#### Optimistic update mesage, and retry failed message by adding message status
 
+Problem:
+- Slow message update until websocket send, client update first will be ideal
+- No idea of failed message, and retry mechanism
+
+&nbsp;
+
+Result:
+
+https://github.com/user-attachments/assets/07090414-ee71-4364-8ef5-98362f2da91c
+
+- [x] Update client messages data structure to map, to quickly get corresponding message by message_id
+- [x] Optimistic update by adding new message in client side, not wait until websocket server send
+- [x] Create `outgoingMessage` objectStore in indexedDB to store failed messsage
+- [x] Handle message when failed, store to indexedDB
+- [x] Add retry mechansim to resend message, and update the correct message in client messages state
