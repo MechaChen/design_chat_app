@@ -1,9 +1,11 @@
 import { openDB } from 'idb';
 
 const dbName = 'chatApp';
-const dbNewestVersion = 2;
+const dbNewestVersion = 3;
 const draftMessageStoreName = 'draftMessages';
 const draftMessageStoreKeyPath = 'userIdAndRoomId';
+const outgoingMessageStoreName = 'outgoingMessages';
+const outgoingMessageStoreKeyPath = 'message_id';
 
 export async function initDB() {
     const db = await openDB(dbName, dbNewestVersion, {
@@ -28,6 +30,13 @@ export async function initDB() {
                         newDraftMessageStore.add(draft);
                     });
                 }
+
+                // eslint-disable-next-line no-fallthrough
+                case 2: {
+                    db.createObjectStore(outgoingMessageStoreName, {
+                        keyPath: outgoingMessageStoreKeyPath
+                    });
+                }
             }
         },
     });
@@ -41,4 +50,16 @@ export async function storeDraftMessage(db, { userIdAndRoomId, message, fileList
 
 export async function getDraftMessage(db, { userIdAndRoomId }) {
     return await db.get(draftMessageStoreName, userIdAndRoomId);
+}
+
+export async function storeOutgoingMessage(db, { message_id, message, room_id, sender, status }) {
+    await db.put(outgoingMessageStoreName, { message_id, message, room_id, sender, status });
+}
+
+export async function deleteOutgoingMessage(db, { message_id }) {
+    await db.delete(outgoingMessageStoreName, message_id);
+}
+
+export async function getAllOutgoingMessage(db) {
+    return await db.getAll(outgoingMessageStoreName);
 }

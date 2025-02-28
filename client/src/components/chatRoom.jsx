@@ -1,17 +1,42 @@
 import { Card, Input, Skeleton, Upload } from 'antd';
 import { useEffect, useRef, useState, forwardRef, useMemo } from 'react';
-import { PlusOutlined } from '@ant-design/icons';
+import { PlusOutlined, ReloadOutlined } from '@ant-design/icons';
 import { v4 as uuidv4 } from 'uuid';
 
 import { getRoomMessages } from '../apis/rooms';
 import { create_message } from '../config/socketActions';
-import { getDraftMessage, initDB, storeDraftMessage } from '../utils/clientStorage';
+import { getDraftMessage, getAllOutgoingMessage, initDB, storeDraftMessage, storeOutgoingMessage, deleteOutgoingMessage } from '../utils/clientStorage';
 import debounce from '../utils/debounce';
 import messageStatus from '../config/messageStatus';
 
-const Message = ({ children, isUser }) => {
+const reloadStyle = {
+    marginRight: '10px',
+    fontSize: '14px',
+    color: '#1877F2'
+}
+
+const Message = forwardRef(function Message({ children, isUser, message }, sharedWorkerRef) {
+    const retryMessage = () => {
+
+        console.log('message ====>', message);
+
+        const newMessagePayload = {
+            action: create_message,
+            message: message.message.replace('failed', 'success'),
+            message_id: message.message_id,
+            room_id: message.room_id,
+            sender: message.sender,
+            status: messageStatus.inFlight,
+        }
+
+        sharedWorkerRef.current?.port.postMessage(newMessagePayload);
+    }
+
     return (
         <div style={{ display: 'flex', justifyContent: isUser ? 'flex-end' : 'flex-start' }}>
+            {message.status === messageStatus.failed && (
+                <ReloadOutlined onClick={retryMessage} style={reloadStyle} />
+            )}
             <Card
                 style={{
                     display: 'inline-block',
@@ -27,7 +52,7 @@ const Message = ({ children, isUser }) => {
             </Card>
         </div>
     );
-};
+});
 
 const UploadButton = () => {
     return (
@@ -66,13 +91,57 @@ const ChatRoom = forwardRef(({ roomId, userEmail, selectedRoom }, sharedWorkerRe
     const [messages, setMessages] = useState(new Map());
     const [isGettingRoomMessages, setIsGettingRoomMessages] = useState(false);
     const messagesEndRef = useRef(null);
+    const clientDB = useRef(null);
+
 
 
     useEffect(() => {
         const addCurRoomMessageListener = (event) => {
             if (event.data.action === create_message) {
 
+                console.log('event.data ====>', event.data);
+
+                if (event.data?.status === 'error') {
+                    storeOutgoingMessage(clientDB.current, {
+                        message_id: event.data.message_id,
+                        message: event.data.message,
+                        room_id: event.data.room_id,
+                        sender: event.data.sender,
+                        status: messageStatus.failed,
+                    });
+                    setMessages(prevMessages => {
+                        const matchedMessage = prevMessages.get(event.data.message_id);
+                        
+                        if (matchedMessage) {
+                            prevMessages.set(matchedMessage.message_id, {
+                                ...matchedMessage,
+                                status: messageStatus.failed,
+                            });
+                        }
+
+                        console.log('prevMessages ====>', Array.from(prevMessages.entries()));
+
+                        return new Map(Array.from(prevMessages.entries()));
+                    })
+                    return;
+                }
+
+                deleteOutgoingMessage(clientDB.current, { message_id: event.data.message_id });
                 setMessages(prevMessages => {
+                    // user send message update to success statue
+                    const matchedMessage = prevMessages.get(event.data.message_id);
+                        
+                    if (matchedMessage) {
+                        prevMessages.set(matchedMessage.message_id, {
+                            ...matchedMessage,
+                            message: event.data.message,
+                            status: messageStatus.success,
+                        });
+
+                        return new Map(Array.from(prevMessages.entries()));
+                    }
+
+                    // other user send message, update to new message
                     const newMessages = new Map();
                     Array.from(prevMessages.values()).forEach((message) => {
                         newMessages.set(message.message_id, message);
@@ -90,21 +159,38 @@ const ChatRoom = forwardRef(({ roomId, userEmail, selectedRoom }, sharedWorkerRe
             // prevent event listener being added twice
             sharedWorkerRef.current?.port.removeEventListener("message", addCurRoomMessageListener);
         }
-    }, [roomId, sharedWorkerRef]);
+    }, [messages, roomId, sharedWorkerRef]);
 
     useEffect(() => {
-        if (selectedRoom) {
+        async function getMessageHistory() {
             setIsGettingRoomMessages(true);
-            getRoomMessages(selectedRoom.room_id).then((data) => {
-                const newMessages = new Map();
-                data.data.forEach(message => {
-                    newMessages.set(message.message_id, message);
-                });
-                setMessages(newMessages);
-                setIsGettingRoomMessages(false);
-            });
+            const data = await getRoomMessages(selectedRoom.room_id);
+            return data.data;
         }
-    }, [selectedRoom]);
+
+        async function getOutgoingMessages() {
+            const db = await initDB();
+            const outgoingMessages = await getAllOutgoingMessage(db);
+            return outgoingMessages;
+        }
+
+        async function getAllMessages() {
+            const messageHistory = await getMessageHistory();
+            const outgoingMessages = await getOutgoingMessages();
+
+            const allMessages = [...messageHistory, ...outgoingMessages];
+            const newMessages = new Map();
+            allMessages.forEach(message => {
+                newMessages.set(message.message_id, message);
+            });
+            setMessages(newMessages);
+            setIsGettingRoomMessages(false);
+        }
+
+        if (selectedRoom) {
+            getAllMessages();
+        }
+    }, [roomId, selectedRoom, userEmail]);
 
     useEffect(() => {
         if (messagesEndRef.current) {
@@ -116,7 +202,6 @@ const ChatRoom = forwardRef(({ roomId, userEmail, selectedRoom }, sharedWorkerRe
     // draft message
     const [draftText, setDraftText] = useState(defaultDraftText);
     const [draftFileList, setDraftFileList] = useState(defaultDraftFileList);
-    const draftMessageDBRef = useRef(null);
 
     // const retryMessage = (messageId) => {
     //     const message = messages.get(messageId);
@@ -151,10 +236,12 @@ const ChatRoom = forwardRef(({ roomId, userEmail, selectedRoom }, sharedWorkerRe
     // }
 
     const handleSendMessage = () => {
+        const message_id = uuidv4();
+
         const newMessagePayload = {
             action: create_message,
             message: draftText,
-            message_id: uuidv4(),
+            message_id,
             room_id: roomId,
             sender: userEmail,
             status: messageStatus.inFlight,
@@ -163,6 +250,8 @@ const ChatRoom = forwardRef(({ roomId, userEmail, selectedRoom }, sharedWorkerRe
         sharedWorkerRef.current?.port.postMessage(newMessagePayload);
         // retryMessage(newMessagePayload.message_id);
         setDraftText('');
+
+
 
         setMessages(prevMessages => {
             const newMessages = new Map(prevMessages);
@@ -178,7 +267,7 @@ const ChatRoom = forwardRef(({ roomId, userEmail, selectedRoom }, sharedWorkerRe
             fileList: newFileList
         });
         setDraftFileList(newFileList);
-        storeDraftMessage(draftMessageDBRef.current, { userIdAndRoomId: `${userEmail}_${roomId}`, message: draftText, fileList: newFileList });
+        storeDraftMessage(clientDB.current, { userIdAndRoomId: `${userEmail}_${roomId}`, message: draftText, fileList: newFileList });
     }
 
     const saveDraftMessage = (e) => {
@@ -191,7 +280,7 @@ const ChatRoom = forwardRef(({ roomId, userEmail, selectedRoom }, sharedWorkerRe
 
         const debouncedSaveDraftMessage = debounce(() => {
             storeDraftMessage(
-                draftMessageDBRef.current,
+                clientDB.current,
                 { userIdAndRoomId: `${userEmail}_${roomId}`, message: e.target.value, fileList: draftFileList });
         }, 500);
 
@@ -221,8 +310,8 @@ const ChatRoom = forwardRef(({ roomId, userEmail, selectedRoom }, sharedWorkerRe
 
     useEffect(() => {
         async function getRoomDraftMessage() {
-            draftMessageDBRef.current = await initDB();
-            const draftMessage = await getDraftMessage(draftMessageDBRef.current, { userIdAndRoomId: `${userEmail}_${roomId}` });
+            clientDB.current = await initDB();
+            const draftMessage = await getDraftMessage(clientDB.current, { userIdAndRoomId: `${userEmail}_${roomId}` });
             setDraftText(draftMessage?.message || defaultDraftText);
             setDraftFileList(draftMessage?.fileList || defaultDraftFileList);
         }
@@ -248,6 +337,7 @@ const ChatRoom = forwardRef(({ roomId, userEmail, selectedRoom }, sharedWorkerRe
                                     key={message.message_id}
                                     isUser={isUser}
                                     message={message}
+                                    ref={sharedWorkerRef}
                                 >
                                     {message.message}
                                 </Message>
