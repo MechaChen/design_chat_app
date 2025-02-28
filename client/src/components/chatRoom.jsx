@@ -1,5 +1,5 @@
 import { Card, Input, Skeleton, Upload } from 'antd';
-import { useEffect, useRef, useState, forwardRef } from 'react';
+import { useEffect, useRef, useState, forwardRef, useMemo } from 'react';
 import { PlusOutlined } from '@ant-design/icons';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -71,10 +71,14 @@ const ChatRoom = forwardRef(({ roomId, userEmail, selectedRoom }, sharedWorkerRe
     useEffect(() => {
         const addCurRoomMessageListener = (event) => {
             if (event.data.action === create_message) {
-                // setMessages(prevMessages => [...prevMessages, event.data]);
+
                 setMessages(prevMessages => {
-                    const newMessages = new Map(prevMessages);
+                    const newMessages = new Map();
+                    Array.from(prevMessages.values()).forEach((message) => {
+                        newMessages.set(message.message_id, message);
+                    });
                     newMessages.set(event.data.message_id, event.data);
+
                     return newMessages;
                 });
             }
@@ -160,7 +164,11 @@ const ChatRoom = forwardRef(({ roomId, userEmail, selectedRoom }, sharedWorkerRe
         // retryMessage(newMessagePayload.message_id);
         setDraftText('');
 
-        setMessages(prevMessages => [...prevMessages, newMessagePayload]);
+        setMessages(prevMessages => {
+            const newMessages = new Map(prevMessages);
+            newMessages.set(newMessagePayload.message_id, newMessagePayload);
+            return newMessages;
+        });
     }
 
     const handleFileChange = ({ fileList: newFileList }) => {
@@ -222,13 +230,13 @@ const ChatRoom = forwardRef(({ roomId, userEmail, selectedRoom }, sharedWorkerRe
         getRoomDraftMessage();
     }, [roomId, userEmail]);
 
-
+    const messageArray = useMemo(() => Array.from(messages.values()), [messages]);
 
     return (
         <div style={{ width: '58%' }}>
             <>
                 <Card style={{ marginBottom: '10px', height: '500px', overflowY: 'auto' }}>
-                    {isGettingRoomMessages ? <Skeleton active /> : Array.from(messages.values()).map((message) => {
+                    {isGettingRoomMessages ? <Skeleton active /> : messageArray.map((message) => {
                         const isUser = message.sender === userEmail;
                         return (
                             <div key={message.message_id} style={{ paddingBottom: '10px' }}>
