@@ -60,10 +60,10 @@ const defaultDraftFileList = [];
 // - if new message is send, grab all failed messages and remove from messages list, 
 //  add new message to messages list first, then re-add failed messages to the end of the list to have better UX and performance
 
-const MAX_RETRY_TIMES = 3;
+// const MAX_RETRY_TIMES = 3;
 
 const ChatRoom = forwardRef(({ roomId, userEmail, selectedRoom }, sharedWorkerRef) => {
-    const [messages, setMessages] = useState([]);
+    const [messages, setMessages] = useState(new Map());
     const [isGettingRoomMessages, setIsGettingRoomMessages] = useState(false);
     const messagesEndRef = useRef(null);
 
@@ -71,7 +71,12 @@ const ChatRoom = forwardRef(({ roomId, userEmail, selectedRoom }, sharedWorkerRe
     useEffect(() => {
         const addCurRoomMessageListener = (event) => {
             if (event.data.action === create_message) {
-                setMessages(prevMessages => [...prevMessages, event.data]);
+                // setMessages(prevMessages => [...prevMessages, event.data]);
+                setMessages(prevMessages => {
+                    const newMessages = new Map(prevMessages);
+                    newMessages.set(event.data.message_id, event.data);
+                    return newMessages;
+                });
             }
         }
 
@@ -87,7 +92,11 @@ const ChatRoom = forwardRef(({ roomId, userEmail, selectedRoom }, sharedWorkerRe
         if (selectedRoom) {
             setIsGettingRoomMessages(true);
             getRoomMessages(selectedRoom.room_id).then((data) => {
-                setMessages(data.data);
+                const newMessages = new Map();
+                data.data.forEach(message => {
+                    newMessages.set(message.message_id, message);
+                });
+                setMessages(newMessages);
                 setIsGettingRoomMessages(false);
             });
         }
@@ -105,37 +114,37 @@ const ChatRoom = forwardRef(({ roomId, userEmail, selectedRoom }, sharedWorkerRe
     const [draftFileList, setDraftFileList] = useState(defaultDraftFileList);
     const draftMessageDBRef = useRef(null);
 
-    const retryMessage = (messageId) => {
-        const message = messages.get(messageId);
+    // const retryMessage = (messageId) => {
+    //     const message = messages.get(messageId);
 
-        // exceed max retry times, set message to failed
-        if (message.status === messageStatus.inFlight
-            && message.retryTimes > MAX_RETRY_TIMES
-        ) {
-            messages.set(messageId, {
-                ...message,
-                status: messageStatus.failed,
-            });
-            return;
-        }
+    //     // exceed max retry times, set message to failed
+    //     if (message.status === messageStatus.inFlight
+    //         && message.retryTimes > MAX_RETRY_TIMES
+    //     ) {
+    //         messages.set(messageId, {
+    //             ...message,
+    //             status: messageStatus.failed,
+    //         });
+    //         return;
+    //     }
 
-        const newRetryTimes = message.retryTimes + 1;
-        messages.set(messageId, {
-            ...message,
-            retryTimes: newRetryTimes,
-        });
+    //     const newRetryTimes = message.retryTimes + 1;
+    //     messages.set(messageId, {
+    //         ...message,
+    //         retryTimes: newRetryTimes,
+    //     });
 
-        // if within max retry times, retry
-        if (message.status === messageStatus.inFlight
-            && message.retryTimes <= MAX_RETRY_TIMES
-        ) {
-            setTimeout(() => {
-                sharedWorkerRef.current?.port.postMessage(message);
-                retryMessage(messageId);
+    //     // if within max retry times, retry
+    //     if (message.status === messageStatus.inFlight
+    //         && message.retryTimes <= MAX_RETRY_TIMES
+    //     ) {
+    //         setTimeout(() => {
+    //             sharedWorkerRef.current?.port.postMessage(message);
+    //             retryMessage(messageId);
 
-            }, Math.pow(2, newRetryTimes) * 1000);
-        }
-    }
+    //         }, Math.pow(2, newRetryTimes) * 1000);
+    //     }
+    // }
 
     const handleSendMessage = () => {
         const newMessagePayload = {
@@ -148,7 +157,7 @@ const ChatRoom = forwardRef(({ roomId, userEmail, selectedRoom }, sharedWorkerRe
         }
 
         sharedWorkerRef.current?.port.postMessage(newMessagePayload);
-        retryMessage(newMessagePayload.message_id);
+        // retryMessage(newMessagePayload.message_id);
         setDraftText('');
 
         setMessages(prevMessages => [...prevMessages, newMessagePayload]);
@@ -219,7 +228,7 @@ const ChatRoom = forwardRef(({ roomId, userEmail, selectedRoom }, sharedWorkerRe
         <div style={{ width: '58%' }}>
             <>
                 <Card style={{ marginBottom: '10px', height: '500px', overflowY: 'auto' }}>
-                    {isGettingRoomMessages ? <Skeleton active /> : messages.map((message) => {
+                    {isGettingRoomMessages ? <Skeleton active /> : Array.from(messages.values()).map((message) => {
                         const isUser = message.sender === userEmail;
                         return (
                             <div key={message.message_id} style={{ paddingBottom: '10px' }}>
