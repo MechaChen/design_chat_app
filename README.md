@@ -6,6 +6,13 @@
 
 &nbsp;
 
+## Architecture
+
+![image](https://github.com/user-attachments/assets/820db2ad-1b32-4235-b4ab-b25a0583c474)
+
+
+&nbsp;
+
 ## Roadmap
 
 ## Functional (Basic) requirements
