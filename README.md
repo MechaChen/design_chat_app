@@ -8,6 +8,14 @@
 
 ## Architecture
 
+### Frontend
+
+<img width="1066" alt="image" src="https://github.com/user-attachments/assets/2049a9d5-558b-41fa-b274-23d7494b76d5" />
+
+&nbsp;
+
+### Backend
+
 ![image](https://github.com/user-attachments/assets/820db2ad-1b32-4235-b4ab-b25a0583c474)
 
 
