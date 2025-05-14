@@ -3,7 +3,6 @@
 ## Tech stack
 ![image](https://github.com/user-attachments/assets/f47f7f2a-289a-401c-b1ac-0fe3c98a108e)
 
-
 &nbsp;
 
 ## Architecture
