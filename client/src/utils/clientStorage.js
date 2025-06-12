@@ -10,33 +10,30 @@ const outgoingMessageStoreKeyPath = 'message_id';
 export async function initDB() {
     const db = await openDB(dbName, dbNewestVersion, {
         async upgrade(db, oldVersion, newVersion, transaction) {
-            switch (oldVersion) {
-                // update draft message store keyPath from roomId to userIdAndRoomId
-                case 1: { 
-                    let oldDrafts = [];
+            // update draft message store keyPath from roomId to userIdAndRoomId
+            if (oldVersion < 1) { 
+                let oldDrafts = [];
 
-                    if (db.objectStoreNames.contains(draftMessageStoreName)) {
-                        const oldStore = transaction.objectStore(draftMessageStoreName);
-                        oldDrafts = await oldStore.getAll();
-                        db.deleteObjectStore(draftMessageStoreName);
-                    }
-
-                    const newDraftMessageStore = db.createObjectStore(draftMessageStoreName, {
-                        keyPath: draftMessageStoreKeyPath
-                    });
-
-                    oldDrafts.forEach((draft) => {
-                        draft.userIdAndRoomId = `${draft.userId}_${draft.roomId}`;
-                        newDraftMessageStore.add(draft);
-                    });
+                if (db.objectStoreNames.contains(draftMessageStoreName)) {
+                    const oldStore = transaction.objectStore(draftMessageStoreName);
+                    oldDrafts = await oldStore.getAll();
+                    db.deleteObjectStore(draftMessageStoreName);
                 }
 
-                // eslint-disable-next-line no-fallthrough
-                case 2: {
-                    db.createObjectStore(outgoingMessageStoreName, {
-                        keyPath: outgoingMessageStoreKeyPath
-                    });
-                }
+                const newDraftMessageStore = db.createObjectStore(draftMessageStoreName, {
+                    keyPath: draftMessageStoreKeyPath
+                });
+
+                oldDrafts.forEach((draft) => {
+                    draft.userIdAndRoomId = `${draft.userId}_${draft.roomId}`;
+                    newDraftMessageStore.add(draft);
+                });
+            }
+
+            if (oldVersion < 2) {
+                db.createObjectStore(outgoingMessageStoreName, {
+                    keyPath: outgoingMessageStoreKeyPath
+                });
             }
         },
     });
